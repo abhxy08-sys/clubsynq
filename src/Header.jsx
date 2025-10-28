@@ -1,10 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import './theme.css';
 
 export default function Header(){
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = React.useState(null);
   React.useEffect(()=>{
     supabase.auth.getUser().then(res => { if(res && res.data && res.data.user) setUser(res.data.user)}).catch(()=>{});
@@ -12,11 +13,22 @@ export default function Header(){
 
   return (
     <div className="header">
-      <div className="brand">
-        <div className="logo">PL</div>
-        <div>
-          <div style={{fontSize:16,fontWeight:800}}>PLS Campus</div>
-          <div className="muted small">Clubs · Events · Meetups</div>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>
+        {(() => {
+          // Show back button only on specific pages: dashboard, profile, and organization detail pages
+          const path = location && location.pathname ? location.pathname : '';
+          const showBack = path.startsWith('/dashboard') || path.startsWith('/profile') || (path.startsWith('/organization/') && path !== '/organization/new');
+          return showBack ? (
+            <button className="back-btn" onClick={() => navigate(-1)} aria-label="Go back">
+              <span className="back-icon">‹</span>
+            </button>
+          ) : null;
+        })()}
+        <div className="brand">
+          
+          <div>
+            <div style={{fontSize:25,fontWeight:800}}>SyncUp</div>
+          </div>
         </div>
       </div>
       <div className="nav-actions">

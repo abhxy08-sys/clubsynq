@@ -15,6 +15,7 @@ function Home() {
   // AddOrganization is a separate page; Home only lists organizations
   const [selectedOrg, setSelectedOrg] = React.useState(null);
   const categories = ['STEM', 'Debate', 'Arts', 'Community Service', 'Business', 'Sports'];
+  const [selectedCategory, setSelectedCategory] = React.useState('All');
 
   React.useEffect(() => {
     async function fetchOrganizations() {
@@ -76,13 +77,29 @@ function Home() {
       <Layout>
         <div style={{ padding: 10 }}>
           <h2 style={{ marginTop: 0, marginBottom: 12 }}>Organizations</h2>
-          {organizations.length === 0 ? (
+
+          {/* Filter bar */}
+          <div className="filter-bar" style={{ marginBottom: 12 }}>
+            <button className={`filter-chip ${selectedCategory === 'All' ? 'active' : ''}`} onClick={() => setSelectedCategory('All')}>All</button>
+            {categories.map(cat => (
+              <button key={cat} className={`filter-chip ${selectedCategory === cat ? 'active' : ''}`} onClick={() => setSelectedCategory(cat)}>{cat}</button>
+            ))}
+          </div>
+
+          {(!organizations || organizations.length) === 0 ? (
             <div className="muted">No organizations found.</div>
           ) : (
             <div className="org-grid">
-              {organizations.map(org => (
+              {/** filter organizations by selectedCategory (case-insensitive) */}
+              {organizations
+                .filter(org => {
+                  if (!selectedCategory || selectedCategory === 'All') return true;
+                  if (!org || !org.category) return false;
+                  return String(org.category).toLowerCase() === String(selectedCategory).toLowerCase();
+                })
+                .map(org => (
                 <div key={org.id} className="org-card" onClick={() => window.location.href = `/organization/${org.id}`}>
-                  <div className="org-accent" />
+                  <div className="org-accent" style={{ background: org && org.homepage_color ? org.homepage_color : undefined }} />
                   <div className="org-content">
                     <div className="org-initials">{(org.name || '').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase()}</div>
                     <div className="org-title">{org.name}</div>
@@ -110,10 +127,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
-  <Route path="/dashboard" element={<Dashboard />} />
-  <Route path="/profile" element={<Profile />} />
-    <Route path="/organization/new" element={<AddOrganization />} />
-        <Route path="/organization/:id" element={<OrganizationDetail />} />
+  <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+  <Route path="/profile" element={<Layout><Profile /></Layout>} />
+  <Route path="/organization/new" element={<Layout><AddOrganization /></Layout>} />
+  <Route path="/organization/:id" element={<Layout><OrganizationDetail /></Layout>} />
       </Routes>
     </Router>
   );

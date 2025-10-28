@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import Calendar from './Calendar';
@@ -73,21 +74,73 @@ export default function Dashboard() {
   if (!user) return <div style={{ padding: 24 }}>Not signed in. <button onClick={() => navigate('/login')}>Login</button></div>;
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      transition={{ duration: 0.6 }}
+      style={{ padding: 24 }}
+    >
+      <motion.div 
+        initial={{ y: 20 }} 
+        animate={{ y: 0 }} 
+        transition={{ duration: 0.8, ease: [0.2, 0.9, 0.3, 1] }}
+        style={{ maxWidth: 1000, margin: '0 auto' }}
+      >
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          <div className="site-card" style={{ flex: 1, textAlign: 'center' }}>
-            <div className="muted">Total Points</div>
-            <div style={{ fontSize: 28, fontWeight: 800 }}>{totalPoints}</div>
-          </div>
-          <div className="site-card" style={{ width: 200, textAlign: 'center' }}>
+          <motion.div 
+            className="site-card" 
+            style={{ flex: 1, textAlign: 'center' }}
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+          >
+            
+            <motion.div 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              style={{ fontSize: 28, fontWeight: 800 }}
+            >
+              <div className="muted">Dashboard</div>
+            </motion.div>
+          </motion.div>
+          <motion.div 
+            className="site-card" 
+            style={{ width: 200, textAlign: 'center' }}
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+          >
             <div className="muted">Orgs Joined</div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{orgsJoined}</div>
-          </div>
-          <div className="site-card" style={{ width: 200, textAlign: 'center' }}>
+            <motion.div 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              style={{ fontSize: 20, fontWeight: 700 }}
+            >
+              {orgsJoined}
+            </motion.div>
+          </motion.div>
+          <motion.div 
+            className="site-card" 
+            style={{ width: 200, textAlign: 'center' }}
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+          >
             <div className="muted">Upcoming</div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{upcoming.length}</div>
-          </div>
+            <motion.div 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              style={{ fontSize: 20, fontWeight: 700 }}
+            >
+              {upcoming.length}
+            </motion.div>
+          </motion.div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 12 }}>
@@ -118,7 +171,7 @@ export default function Dashboard() {
         </div>
 
         {selectedEvent && <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

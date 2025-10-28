@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from './Layout';
 import { supabase } from './supabaseClient';
 import './theme.css';
 
@@ -17,12 +16,12 @@ export default function AddOrganization(){
       try {
         const { data } = await supabase.auth.getUser();
         if (data && data.user) setUser(data.user);
-        else navigate('/login');
+        else setUser(null);
       } catch (err) {
-        navigate('/login');
+        setUser(null);
       }
     })();
-  }, [navigate]);
+  }, []);
   const categories = ['STEM', 'Debate', 'Arts', 'Community Service', 'Business', 'Sports'];
 
   const handleFormChange = (e) => {
@@ -104,13 +103,25 @@ export default function AddOrganization(){
       }
     }
   };
+  const ALLOWED_EMAIL = 'programmingabhay@gmail.com';
+  const isAllowed = user?.email === ALLOWED_EMAIL;
 
   return (
-    <Layout>
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <h2 style={{ marginTop: 0 }}>Add Organization</h2>
-        <form onSubmit={handleSubmit} className="site-card" style={{ padding: 18 }}>
-          <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+      <h2 style={{ marginTop: 0 }}>Add Organization</h2>
+
+      {/* If the signed-in user's email is not the allowed admin email, show locked message */}
+      {!isAllowed ? (
+          <div className="site-card" style={{ padding: 18, textAlign: 'center' }}>
+            <h3 style={{ marginTop: 0 }}>Organization additions are currently locked</h3>
+            <p style={{ color: 'var(--muted)', marginTop: 6 }}>Message us on instagram <strong>SyncUp.qa</strong> to add your organization</p>
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 8 }}>
+              <button type="button" className="btn btn-ghost" onClick={() => navigate('/home')}>Back to Organizations</button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="site-card" style={{ padding: 18 }}>
+            <div style={{ display: 'grid', gap: 10 }}>
             <input name="name" type="text" placeholder="Organization Name" value={form.name} onChange={handleFormChange} required style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', background: 'transparent', color: 'inherit' }} />
             <div style={{ height: 18, marginTop: 6 }}>
               {nameAvailable === true && <div style={{ color: '#10b981', fontSize: 13 }}>Name available ✓</div>}
@@ -144,7 +155,7 @@ export default function AddOrganization(){
             </div>
           </div>
         </form>
+        )}
       </div>
-    </Layout>
   );
 }

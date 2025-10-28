@@ -24,17 +24,36 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!user) return navigate('/login');
-    const payload = { id: user.id, full_name: profile.full_name, username: profile.username, interests: profile.interests, skills: profile.skills, certifications: profile.certifications, school: profile.school, grade: profile.grade };
-    // upsert into profiles table
-    const { error } = await supabase.from('profiles').upsert({ ...payload, bio: profile.bio });
+    // Upsert only the editable fields (we removed Full name and Username from the UI to avoid accidental overwrites)
+    const payload = {
+      id: user.id,
+      interests: profile.interests,
+      skills: profile.skills,
+      certifications: profile.certifications,
+      school: profile.school,
+      grade: profile.grade,
+      bio: profile.bio
+    };
+    const { data, error } = await supabase.from('profiles').upsert([payload], { onConflict: 'id' }).select();
     if (error) {
-      // detect missing column error
       if (error.message && error.message.includes("Could not find the 'bio' column")) {
         return alert('Error saving profile: the profiles table is missing the "bio" column. Run db/create_profiles_table.sql or add the column: ALTER TABLE public.profiles ADD COLUMN bio TEXT;');
       }
       return alert('Error saving profile: ' + error.message);
     }
-    alert('Profile saved');
+    console.log('profile upsert result', { data, error });
+    if (!data || !data.length) {
+      alert('Profile save did not return data. Please check Supabase permissions or RLS policies.');
+    } else {
+      // keep local UI in sync with returned row
+      try {
+        const returned = Array.isArray(data) ? data[0] : data;
+        if (returned) setProfile(p => ({ ...p, ...returned }));
+      } catch (e) {
+        console.warn('failed to apply returned profile to state', e);
+      }
+      alert('Profile saved');
+    }
   };
 
   if (loading) return <div style={{ padding: 24 }}>Loading...</div>;
@@ -44,23 +63,14 @@ export default function Profile() {
     <div style={{ padding: 24 }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         <div className="site-card">
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <div style={{ width: 96, height: 96, borderRadius: 14, background: 'linear-gradient(90deg,var(--accent),var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>A</div>
-            <div>
-              <h2 style={{ margin: 0 }}>Edit Profile</h2>
-              <div className="muted">{user.email}</div>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div>
+                <h2 style={{ margin: 0 }}>Edit Profile</h2>
+                <div className="muted">{user.email}</div>
+              </div>
             </div>
-          </div>
           <div style={{ marginTop: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label className="muted">Full name</label>
-                <input value={profile.full_name} onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', background: 'transparent' }} />
-              </div>
-              <div>
-                <label className="muted">Username</label>
-                <input value={profile.username} onChange={e => setProfile(p => ({ ...p, username: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', background: 'transparent' }} />
-              </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="muted">Interests</label>
                 <input value={profile.interests} onChange={e => setProfile(p => ({ ...p, interests: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', background: 'transparent' }} />

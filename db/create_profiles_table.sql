@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   grade TEXT,
   bio TEXT,
   avatar_url TEXT,
-  updated_at timestamptz DEFAULT now(
+  tags TEXT,
+  updated_at timestamptz DEFAULT now()
 );
 
 -- Grant basic select/insert/update to authenticated role (optional if using RLS)
