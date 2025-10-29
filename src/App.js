@@ -25,6 +25,7 @@ function Home() {
     fetchOrganizations();
   }, []);
 
+
   // helper: accept either a full URL or a storage path and return a public URL
   const resolveStorageUrl = (urlOrPath) => {
     if (!urlOrPath) return null;
@@ -43,7 +44,7 @@ function Home() {
   // no form handling in Home anymore
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
       
 
       {/* Organization Details Modal */}

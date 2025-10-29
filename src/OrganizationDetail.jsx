@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { initGoogleSheetsClient, requestAccessToken, appendRow } from './googleSheetsClient';
 import Calendar from './Calendar';
@@ -49,6 +49,14 @@ export default function OrganizationDetail() {
   const [postContent, setPostContent] = React.useState('');
   const [isPoll, setIsPoll] = React.useState(false);
   const [pollOptions, setPollOptions] = React.useState(['', '']);
+  // Q&A state
+  const [qaList, setQaList] = React.useState([]);
+  const [newQuestion, setNewQuestion] = React.useState('');
+  const [qaMessage, setQaMessage] = React.useState('');
+  const [qaLoading, setQaLoading] = React.useState(false);
+  const [answerDrafts, setAnswerDrafts] = React.useState({});
+  const [qaRepliesMap, setQaRepliesMap] = React.useState({});
+  const [replyDrafts, setReplyDrafts] = React.useState({});
   const [orgTags, setOrgTags] = React.useState([]); // tags available for this organization {id, name}
   const [selectedTags, setSelectedTags] = React.useState([]); // names of tags selected for new post
   const [showNewTagInput, setShowNewTagInput] = React.useState(false);
@@ -298,7 +306,7 @@ export default function OrganizationDetail() {
     }, [user]);
 
     // helper: fetch votes for given posts and build counts/user-vote info
-    async function fetchAndSetPostVotes(postsList) {
+    const fetchAndSetPostVotes = React.useCallback(async (postsList) => {
       try {
         if (!postsList || postsList.length === 0) {
           setPostVotesMap({});
@@ -327,7 +335,7 @@ export default function OrganizationDetail() {
         // ignore errors (table may not exist)
         setPostVotesMap({});
       }
-    }
+    }, [user]);
 
     // save tags for a member's profile (create profile row if missing)
     async function saveMemberTags(userId, tagsArray) {
@@ -413,7 +421,7 @@ export default function OrganizationDetail() {
         return false;
       });
       fetchAndSetPostVotes(visible);
-    }, [posts, user, membership, currentProfile, org]);
+  }, [posts, user, membership, currentProfile, org, fetchAndSetPostVotes, groupMembersMap]);
 
   // Fetch messages for an active chat group
   async function fetchGroupMessages(groupId) {
@@ -492,6 +500,39 @@ export default function OrganizationDetail() {
     })();
     }, [user, org, id]);
 
+  // fetch Q&A for this org when organizer page is viewed or when Q&A tab becomes active
+  React.useEffect(() => {
+    if (!org) return;
+    if (activeSection !== 'qa') return;
+    let mounted = true;
+    (async () => {
+      setQaLoading(true);
+      try {
+        const { data } = await supabase.from('organization_questions').select('*').eq('organization_id', id).order('created_at', { ascending: false });
+        if (!mounted) return;
+        // split into top-level questions and replies (parent_id)
+        const rows = data || [];
+        const top = [];
+        const map = {};
+        (rows || []).forEach(r => {
+          if (r.parent_id) {
+            map[r.parent_id] = map[r.parent_id] || [];
+            map[r.parent_id].push(r);
+          } else {
+            top.push(r);
+          }
+        });
+        setQaList(top);
+        setQaRepliesMap(map);
+      } catch (e) {
+        // ignore
+      } finally {
+        if (mounted) setQaLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [org, activeSection, id]);
+
   // Ensure missing member profiles are fetched (batch). This will populate membersList entries
   // so the UI shows names/emails instead of UUIDs when possible.
   React.useEffect(() => {
@@ -541,6 +582,91 @@ export default function OrganizationDetail() {
 
   // determine if current user is an org admin (either via membership.role or legacy org.admin_email)
   const isOrgAdmin = !!(user && ( (membership && membership.role === 'admin') || (org && user.email === org.admin_email) ));
+
+  // When an organization chooses a "solid" homepage color (yellow variants),
+  // set the document body background and toggle a helper class so the outer
+  // When an organization picks a homepage color, apply it to the document
+  // background and toggle a helper class so the outer page area can match
+  // the org color. Run unconditionally (top-level) so hooks keep stable.
+  React.useEffect(() => {
+    // If no org or no color, ensure we remove the helper class and restore
+    // any previous background value.
+    if (!org || !org.homepage_color) {
+      try { document.body.classList.remove('org-solid-bg'); } catch (e) {}
+      return;
+    }
+
+    try {
+      const c = (org.homepage_color || '').toString().trim();
+      const prevBodyBg = document.body.style.background || '';
+      // Apply the chosen color (solid). This intentionally uses a solid
+      // fill so the outer page area matches the selected color exactly.
+      document.body.style.background = c;
+      document.body.classList.add('org-solid-bg');
+
+      // Also force the top-level layout wrappers to be transparent so the
+      // body background shows through immediately (some pages render a
+      // wrapping .site-card from Layout that would otherwise obscure body).
+      const appEl = document.querySelector('.app-container');
+      const outerCard = appEl ? appEl.querySelector('.site-card') : document.querySelector('.site-card');
+      const prevAppBg = appEl ? appEl.style.background || '' : null;
+      const prevOuterCardBg = outerCard ? outerCard.style.background || '' : null;
+      const prevOuterCardBorder = outerCard ? outerCard.style.border || '' : null;
+      const prevOuterCardBoxShadow = outerCard ? outerCard.style.boxShadow || '' : null;
+      try {
+        if (appEl) appEl.style.background = 'transparent';
+        if (outerCard) {
+          outerCard.style.background = 'transparent';
+          outerCard.style.border = 'none';
+          outerCard.style.boxShadow = 'none';
+        }
+      } catch (e) {}
+
+      return () => {
+        // restore previous background and remove helper class on unmount
+        try { document.body.style.background = prevBodyBg || ''; } catch (e) {}
+        try { document.body.classList.remove('org-solid-bg'); } catch (e) {}
+        try { if (appEl) appEl.style.background = prevAppBg || ''; } catch (e) {}
+        try { if (outerCard) { outerCard.style.background = prevOuterCardBg || ''; outerCard.style.border = prevOuterCardBorder || ''; outerCard.style.boxShadow = prevOuterCardBoxShadow || ''; } } catch (e) {}
+      };
+    } catch (e) {
+      // best-effort only
+      try { document.body.classList.remove('org-solid-bg'); } catch (e) {}
+    }
+  }, [org]);
+
+  // Apply organization-chosen text color to the CSS variable --text so the
+  // UI uses the admin selected color. This runs unconditionally and restores
+  // the previous value on cleanup.
+  React.useEffect(() => {
+    if (!org || !org.homepage_text_color) {
+      // remove override if present
+      try { document.documentElement.style.removeProperty('--text'); } catch (e) {}
+      return;
+    }
+    try {
+      const newText = (org.homepage_text_color || '').toString().trim();
+      const prevText = getComputedStyle(document.documentElement).getPropertyValue('--text') || '';
+      const prevMuted = getComputedStyle(document.documentElement).getPropertyValue('--muted') || '';
+      // set both --text and --muted so UI elements that use var(--muted)
+      // (category, email, secondary labels) also update to the chosen color
+      document.documentElement.style.setProperty('--text', newText);
+      document.documentElement.style.setProperty('--muted', newText);
+      return () => {
+        try {
+          if (prevText && prevText.trim().length > 0) document.documentElement.style.setProperty('--text', prevText.trim());
+          else document.documentElement.style.removeProperty('--text');
+        } catch (e) {}
+        try {
+          if (prevMuted && prevMuted.trim().length > 0) document.documentElement.style.setProperty('--muted', prevMuted.trim());
+          else document.documentElement.style.removeProperty('--muted');
+        } catch (e) {}
+      };
+    } catch (e) {
+      try { document.documentElement.style.removeProperty('--text'); } catch (e) {}
+      try { document.documentElement.style.removeProperty('--muted'); } catch (e) {}
+    }
+  }, [org]);
 
   if (loading) return <div style={{ padding: 32 }}>Loading...</div>;
   if (!org) return <div style={{ padding: 32 }}>Organization not found. <button onClick={() => navigate('/home')}>Back</button></div>;
@@ -679,7 +805,23 @@ export default function OrganizationDetail() {
   }
 
   // compute page background when org color provided
-  const pageBackground = org && org.homepage_color ? `linear-gradient(180deg, ${hexToRgba(org.homepage_color, 0.12)}, ${hexToRgba(org.homepage_color, 0.06)})` : undefined;
+  // If admin chooses a bright 'yellow' color, make the whole page solid that color
+  let pageBackground = undefined;
+  let orgHomepageIsSolid = false;
+  if (org && org.homepage_color) {
+    const c = (org.homepage_color || '').toString().trim();
+    const lower = c.toLowerCase();
+    // treat a few common yellow representations as "make solid"
+    const yellowValues = new Set(['#ffff00', '#ff0', 'yellow', '#ffd700']);
+    if (yellowValues.has(lower)) {
+      pageBackground = c;
+      orgHomepageIsSolid = true;
+    } else {
+      pageBackground = `linear-gradient(180deg, ${hexToRgba(c, 0.12)}, ${hexToRgba(c, 0.06)})`;
+    }
+  }
+
+  // (Effect moved earlier to run before any early returns.)
 
   return (
     <motion.div 
@@ -693,7 +835,13 @@ export default function OrganizationDetail() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.2, 0.9, 0.3, 1] }}
-        style={{ maxWidth: 900, margin: '0 auto', padding: 20, borderTop: org && org.homepage_color ? `6px solid ${org.homepage_color}` : undefined }}
+        style={{
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: 20,
+          borderTop: org && org.homepage_color ? `6px solid ${org.homepage_color}` : undefined,
+          background: orgHomepageIsSolid ? 'transparent' : undefined
+        }}
       >
         <motion.div 
           initial={{ y: 10, opacity: 0 }} 
@@ -797,18 +945,28 @@ export default function OrganizationDetail() {
                   // optimistic update
                   setOrg(o => ({ ...(o || {}), homepage_color: newColor }));
                 }} style={{ width: 48, height: 36, border: 'none', padding: 0, background: 'transparent' }} />
-                <button className="btn btn-primary" onClick={async () => {
-                  if (!org) return;
-                  const newColor = org.homepage_color || '#2563eb';
-                  try {
-                    const { data, error } = await supabase.from('organizations').update({ homepage_color: newColor }).eq('id', org.id).select().single();
-                    if (error) return setMessage('Could not save color: ' + error.message);
-                    setOrg(data);
-                    setMessage('Saved homepage color');
-                  } catch (err) {
-                    setMessage('Could not save color: ' + (err.message || err));
-                  }
-                }}>Save color</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13 }}>Text color</span>
+                    <input type="color" value={(org && org.homepage_text_color) ? org.homepage_text_color : '#764E47'} onChange={e => {
+                      const newText = e.target.value;
+                      setOrg(o => ({ ...(o || {}), homepage_text_color: newText }));
+                    }} style={{ width: 44, height: 32, border: 'none', padding: 0, background: 'transparent' }} />
+                  </label>
+                  <button className="btn btn-primary" onClick={async () => {
+                    if (!org) return;
+                    const newColor = org.homepage_color || '#2563eb';
+                    const newText = org.homepage_text_color || '#764E47';
+                    try {
+                      const { data, error } = await supabase.from('organizations').update({ homepage_color: newColor, homepage_text_color: newText }).eq('id', org.id).select().single();
+                      if (error) return setMessage('Could not save colors: ' + error.message);
+                      setOrg(data);
+                      setMessage('Saved homepage colors');
+                    } catch (err) {
+                      setMessage('Could not save colors: ' + (err.message || err));
+                    }
+                  }}>Save color</button>
+                </div>
               </div>
             </div>
           )}
@@ -857,6 +1015,7 @@ export default function OrganizationDetail() {
             { key: 'calendar', label: 'Calendar' },
             { key: 'members', label: 'Members' },
             { key: 'posts', label: 'Posts & Polls' },
+            { key: 'qa', label: 'Q & A' },
             { key: 'admin', label: 'Admin' }
           ].map((t, index) => (
             <motion.button 
@@ -1776,6 +1935,87 @@ export default function OrganizationDetail() {
             ) : (
               <p style={{ color: '#666' }}>Admin controls are visible to the organization admin only.</p>
             )}
+          </section>
+        )}
+
+        {/* Section: Q & A */}
+        {activeSection === 'qa' && (
+          <section style={{ marginTop: 16 }}>
+            <h3>Q & A</h3>
+            <div style={{ border: '1px solid #eee', padding: 12, borderRadius: 8, marginBottom: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <textarea placeholder="Ask a question to the club..." value={newQuestion} onChange={e => setNewQuestion(e.target.value)} style={{ minHeight: 80, padding: 8, borderRadius: 6 }} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button className="btn btn-ghost" onClick={() => setNewQuestion('')}>Reset</button>
+                  <button className="btn btn-primary" onClick={async () => {
+                    setQaMessage('');
+                    if (!newQuestion || newQuestion.trim().length === 0) return setQaMessage('Write a question first');
+                    try {
+                      setQaLoading(true);
+                      const payload = { organization_id: id, author_id: user ? user.id : null, content: newQuestion.trim() };
+                      const { data, error } = await supabase.from('organization_questions').insert([payload]).select().single();
+                      if (error) return setQaMessage('Error posting question: ' + error.message);
+                      setNewQuestion('');
+                      // prepend to local list
+                      setQaList(q => [data].concat(q || []));
+                      setQaMessage('Question posted');
+                      setTimeout(() => setQaMessage(''), 2500);
+                    } catch (err) {
+                      setQaMessage('Could not post question: ' + (err.message || err));
+                    } finally {
+                      setQaLoading(false);
+                    }
+                  }}>{qaLoading ? 'Posting...' : 'Post question'}</button>
+                </div>
+                {qaMessage ? <div style={{ color: qaMessage.startsWith('Error') ? 'red' : 'green' }}>{qaMessage}</div> : null}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12 }}>
+              {qaList.length === 0 ? <p style={{ color: '#666' }}>No questions yet</p> : qaList.map(q => (
+                <div key={q.id} style={{ border: '1px solid #eee', padding: 12, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <div style={{ fontWeight: 700 }}>{q.content}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{q.created_at ? new Date(q.created_at).toLocaleString() : ''}</div>
+                  </div>
+                  <div style={{ marginTop: 8, color: '#666' }}>Asked by: <b>{q.author_id ? displayNameForUser(q.author_id) : 'Anonymous'}</b></div>
+                  {q.answer ? (
+                    <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: '#fbfbfb' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>Answer</div>
+                      <div style={{ marginTop: 8 }}>{q.answer}</div>
+                      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>Answered by: <b>{q.answered_by ? displayNameForUser(q.answered_by) : '—'}</b> {q.answered_at ? ` • ${new Date(q.answered_at).toLocaleString()}` : ''}</div>
+                    </div>
+                  ) : (
+                    isOrgAdmin ? (
+                      <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input placeholder="Write an answer..." value={answerDrafts[q.id] || ''} onChange={e => setAnswerDrafts(ad => ({ ...(ad||{}), [q.id]: e.target.value }))} style={{ flex: 1, padding: 8, borderRadius: 6 }} />
+                        <button className="btn btn-primary" onClick={async () => {
+                          const ans = (answerDrafts[q.id] || '').trim();
+                          if (!ans) return setQaMessage('Write an answer first');
+                          try {
+                            setQaLoading(true);
+                            const payload = { answer: ans, answered_by: user ? user.id : null, answered_at: new Date().toISOString() };
+                            const { data, error } = await supabase.from('organization_questions').update(payload).eq('id', q.id).select().single();
+                            if (error) return setQaMessage('Error saving answer: ' + error.message);
+                            // update local list
+                            setQaList(list => (list || []).map(item => item.id === q.id ? data : item));
+                            setAnswerDrafts(ad => { const copy = { ...(ad||{}) }; delete copy[q.id]; return copy; });
+                            setQaMessage('Answer saved');
+                            setTimeout(() => setQaMessage(''), 2500);
+                          } catch (err) {
+                            setQaMessage('Could not save answer: ' + (err.message || err));
+                          } finally {
+                            setQaLoading(false);
+                          }
+                        }}>Answer</button>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 12, color: '#999' }}>Not answered yet.</div>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
           </section>
         )}
 

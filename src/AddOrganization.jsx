@@ -151,8 +151,9 @@ export default function AddOrganization(){
             {/* admin is set to the signed-in user */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button type="button" onClick={() => navigate('/home')} className="btn btn-ghost">Cancel</button>
-              <button type="submit" className="btn btn-primary" disabled={nameAvailable === false}>Create Organization</button>
+              <button type="submit" className="btn btn-primary" disabled={nameAvailable === false || uploading}>{uploading ? 'Creating...' : 'Create Organization'}</button>
             </div>
+            {message ? <div style={{ marginTop: 12, color: message.startsWith('Error') || message.includes('Error') || message.includes('failed') ? 'red' : 'green' }}>{message}</div> : null}
           </div>
         </form>
         )}

@@ -4,14 +4,16 @@
   --bg-1: #0b1020;
   --bg-2: #0f172a;
   --card: rgba(255,255,255,0.03);
-  --muted: #94a3b8;
+  --muted: #764E47; /* muted text now matches requested text color */
+  --text: #764E47; /* main text color */
   --accent: #7c3aed;
   --accent-2: #06b6d4;
   --glass: rgba(255,255,255,0.02);
 }
 
 *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
-body{margin:0;background:linear-gradient(180deg,var(--bg-2) 0%, var(--bg-1) 100%);color:#e6f0ff;min-height:100vh}
+/* Page background changed to white per request */
+body{margin:0;background:#ffffff;color:var(--text);min-height:100vh}
 
 /* Animated background blob behind central cards */
 .animated-blob{
@@ -27,7 +29,40 @@ body{margin:0;background:linear-gradient(180deg,var(--bg-2) 0%, var(--bg-1) 100%
 }
 
 .app-container{max-width:1100px;margin:36px auto;padding:18px}
-.site-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);padding:20px;border-radius:14px;box-shadow:0 12px 40px rgba(2,6,23,0.6);position:relative;z-index:1}
+.site-card{background:#D3C3D2;/* organizations box color */border:1px solid rgba(0,0,0,0.08);padding:20px;border-radius:14px;box-shadow:0 6px 18px rgba(6,10,22,0.08);position:relative;z-index:1}
+
+/* When an organization requests a solid homepage color (e.g. bright yellow),
+   make page-level site-cards transparent so the whole viewport shows the color */
+.org-solid-bg .site-card{background:transparent !important;border:none !important;box-shadow:none !important}
+.org-solid-bg .app-container{background:transparent}
+.org-solid-bg .header{background:transparent}
+.org-solid-bg .nav-actions .btn{box-shadow:none}
+/* Dashboard-specific overrides: make dashboard cards white */
+.dashboard-page .site-card{
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 6px 18px rgba(16,24,32,0.06);
+}
+
+/* Upcoming events card on dashboard should be purple */
+.dashboard-page .site-card.upcoming-card{
+  background: #BF8ED4;
+  color: #000000; /* upcoming events text now black */
+  border: 1px solid rgba(191,142,212,0.14);
+  box-shadow: 0 10px 30px rgba(191,142,212,0.12);
+}
+
+/* Ensure muted text in dashboard cards remains readable */
+.dashboard-page .site-card .muted{color:rgba(118,78,71,0.8)}
+
+/* Make upcoming events text fully white and improve contrast for list items/buttons */
+.dashboard-page .site-card.upcoming-card .muted{color:rgba(0,0,0,0.72)}
+.dashboard-page .site-card.upcoming-card ul{padding:0}
+.dashboard-page .site-card.upcoming-card ul li{padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)}
+.dashboard-page .site-card.upcoming-card ul li .muted{color:rgba(0,0,0,0.6)}
+.dashboard-page .site-card.upcoming-card .btn-ghost{background:#ffffff;color:#000;border:1px solid rgba(0,0,0,0.08)}
+.dashboard-page .site-card.upcoming-card .btn-ghost:hover{background:#f2f2f2;color:#000}
 /* Entrance animation for cards */
 .card-entrance{animation:cardIn .72s cubic-bezier(.2,.9,.3,1) both}
 @keyframes cardIn{
@@ -38,19 +73,26 @@ body{margin:0;background:linear-gradient(180deg,var(--bg-2) 0%, var(--bg-1) 100%
 .brand{display:flex;align-items:center;gap:12px}
 .logo{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800}
 .nav-actions{display:flex;gap:10px;align-items:center}
-.btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;transition:transform .18s ease, box-shadow .18s ease}
+.btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;transition:transform .18s ease, box-shadow .18s ease;background:#BF8ED4;color:#ffffff}
 .btn:active{transform:translateY(1px)}
-.btn-glow:hover{box-shadow:0 8px 30px rgba(124,58,237,0.28);transform:translateY(-3px)}
-.btn-primary{background:linear-gradient(90deg,var(--accent),#5b21b6);color:white}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+.btn-glow:hover{box-shadow:0 8px 30px rgba(191,142,212,0.28);transform:translateY(-3px)}
+.btn-primary{background:#BF8ED4;color:white}
+.btn-ghost{background:transparent;color:#BF8ED4;border:1px solid rgba(191,142,212,0.12)}
+
+/* Header/nav-specific button styles: make Home, Dashboard, Add Organization use the brown text
+  and fill with brown + white text on hover (consistent with filter chips) */
+.nav-actions .btn{background:#BF8ED4;color:white;border:1px solid rgba(191,142,212,0.12)}
+.nav-actions .btn:hover{background:#a876b9;color:white;transform:translateY(-2px);box-shadow:0 8px 30px rgba(191,142,212,0.12)}
+.nav-actions .btn-primary{background:#BF8ED4;color:white;border:1px solid rgba(191,142,212,0.12)}
+.nav-actions .btn-primary:hover{background:#a876b9;color:white;border:1px solid rgba(191,142,212,0.18);box-shadow:0 8px 30px rgba(191,142,212,0.12)}
 .muted{color:var(--muted)}
 .small{font-size:13px}
 .profile-pill{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);cursor:pointer}
-.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(90deg,#fff2,#fff6);display:flex;align-items:center;justify-content:center;color:#061029;font-weight:700}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(90deg,#fff2,#fff6);display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:700}
 
 /* back button in header */
 .back-btn{width:40px;height:40px;border-radius:10px;border:none;background:rgba(255,255,255,0.02);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s ease;font-size:20px}
-.back-btn:hover{background:rgba(255,255,255,0.04);transform:translateX(-3px);color:#e6f0ff}
+.back-btn:hover{background:rgba(255,255,255,0.04);transform:translateX(-3px);color:var(--text)}
 .back-icon{line-height:1;font-weight:700}
 
 .org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
@@ -98,8 +140,8 @@ body{margin:0;background:linear-gradient(180deg,var(--bg-2) 0%, var(--bg-1) 100%
 .modal-right{min-width:0}
 .modal-field{margin-bottom:8px}
 .modal-field strong{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
-.modal-bio{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;color:#dfe9ff;line-height:1.4;max-height:160px;overflow:auto}
-.tag-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);color:#e6f0ff;margin:6px 6px 6px 0;font-weight:700;font-size:13px}
+.modal-bio{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;color:var(--text);line-height:1.4;max-height:160px;overflow:auto}
+.tag-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);color:var(--text);margin:6px 6px 6px 0;font-weight:700;font-size:13px}
 .tag-input{display:flex;gap:8px;margin-top:10px}
 .tag-input input{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
 .input{transition:box-shadow .12s ease, border-color .12s ease}
@@ -125,6 +167,6 @@ body{margin:0;background:linear-gradient(180deg,var(--bg-2) 0%, var(--bg-1) 100%
 
 /* category filter chips */
 .filter-bar{display:flex;gap:8px;flex-wrap:wrap}
-.filter-chip{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;transition:all .12s ease}
-.filter-chip:hover{background:rgba(255,255,255,0.02);color:#e6f0ff;transform:translateY(-2px)}
-.filter-chip.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;border:1px solid rgba(255,255,255,0.06)}
+.filter-chip{background:transparent;border:1px solid rgba(118,78,71,0.12);color:var(--text);padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;transition:all .12s ease}
+.filter-chip:hover{background:var(--text);color:white;transform:translateY(-2px)}
+.filter-chip.active{background:var(--text);color:white;border:1px solid rgba(118,78,71,0.18)}

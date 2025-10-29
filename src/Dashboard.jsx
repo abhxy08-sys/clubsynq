@@ -7,8 +7,7 @@ import EventDetail from './EventDetail';
 
 export default function Dashboard() {
   const [user, setUser] = React.useState(null);
-  const [totalPoints, setTotalPoints] = React.useState(0);
-  const [breakdown, setBreakdown] = React.useState({});
+  
   const [orgsJoined, setOrgsJoined] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [events, setEvents] = React.useState([]);
@@ -25,25 +24,8 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     if (!user) return;
-    (async () => {
-      // Sum points only for current user
-      const { data, error } = await supabase.from('user_points').select('organization_id, points').eq('user_id', user.id);
-      if (error) {
-        setTotalPoints(0);
-        return;
-      }
-      const total = (data || []).reduce((s, r) => s + (r.points || 0), 0);
-      setTotalPoints(total);
-      // breakdown per organization
-      const byOrg = {};
-      (data || []).forEach(r => {
-        const oid = r.organization_id || 'unknown';
-        byOrg[oid] = (byOrg[oid] || 0) + (r.points || 0);
-      });
-      setBreakdown(byOrg);
-    })();
-        // fetch user's followed organizations (memberships) and their events
-    (async () => {
+    // fetch user's followed organizations (memberships) and their events
+  (async () => {
       try {
         const { data: memberships } = await supabase.from('memberships').select('organization_id').eq('user_id', user.id);
         setOrgsJoined((memberships || []).length);
@@ -60,8 +42,12 @@ export default function Dashboard() {
         const orgById = (orgs || []).reduce((acc, o) => { acc[o.id] = o.name; return acc; }, {});
         const enriched = eventsList.map(ev => ({ ...ev, organization_name: orgById[ev.organization_id] || String(ev.organization_id) }));
         setEvents(enriched);
-        // upcoming: next 10 upcoming events sorted
-        const upcomingList = enriched.filter(e => e.date).sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0,10);
+  // upcoming: next 10 upcoming events sorted (exclude events that have already finished)
+        const now = Date.now();
+        const upcomingList = enriched
+          .filter(e => e.date && new Date(e.date).getTime() > now)
+          .sort((a,b) => new Date(a.date) - new Date(b.date))
+          .slice(0,10);
         setUpcoming(upcomingList);
       } catch (err) {
         console.error('Failed loading events for dashboard', err);
@@ -78,6 +64,7 @@ export default function Dashboard() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       transition={{ duration: 0.6 }}
+      className="dashboard-page"
       style={{ padding: 24 }}
     >
       <motion.div 
@@ -148,7 +135,7 @@ export default function Dashboard() {
             <h3 style={{ marginTop: 0 }}>Calendar</h3>
             <Calendar events={events} onEventClick={ev => setSelectedEvent(ev)} />
           </div>
-          <div className="site-card">
+          <div className="site-card upcoming-card">
             <h4 style={{ marginTop: 0 }}>Upcoming Events</h4>
             {upcoming.length === 0 ? <div className="muted">No upcoming events from followed clubs.</div> : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
