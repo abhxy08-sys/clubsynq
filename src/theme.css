@@ -4,8 +4,8 @@
   --bg-1: #0b1020;
   --bg-2: #0f172a;
   --card: rgba(255,255,255,0.03);
-  --muted: #764E47; /* muted text now matches requested text color */
-  --text: #764E47; /* main text color */
+  --muted: rgba(0,0,0,0.65); /* muted text now black-ish */
+  --text: #000000; /* main text color */
   --accent: #7c3aed;
   --accent-2: #06b6d4;
   --glass: rgba(255,255,255,0.02);
@@ -77,14 +77,14 @@ body{margin:0;background:#ffffff;color:var(--text);min-height:100vh}
 .btn:active{transform:translateY(1px)}
 .btn-glow:hover{box-shadow:0 8px 30px rgba(191,142,212,0.28);transform:translateY(-3px)}
 .btn-primary{background:#BF8ED4;color:white}
-.btn-ghost{background:transparent;color:#BF8ED4;border:1px solid rgba(191,142,212,0.12)}
+.btn-ghost{background:transparent;color:var(--accent);border:1px solid rgba(124,58,237,0.12)}
 
 /* Header/nav-specific button styles: make Home, Dashboard, Add Organization use the brown text
   and fill with brown + white text on hover (consistent with filter chips) */
 .nav-actions .btn{background:#BF8ED4;color:white;border:1px solid rgba(191,142,212,0.12)}
-.nav-actions .btn:hover{background:#a876b9;color:white;transform:translateY(-2px);box-shadow:0 8px 30px rgba(191,142,212,0.12)}
+.nav-actions .btn:hover{background:var(--accent);color:white;transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,0.12)}
 .nav-actions .btn-primary{background:#BF8ED4;color:white;border:1px solid rgba(191,142,212,0.12)}
-.nav-actions .btn-primary:hover{background:#a876b9;color:white;border:1px solid rgba(191,142,212,0.18);box-shadow:0 8px 30px rgba(191,142,212,0.12)}
+.nav-actions .btn-primary:hover{background:var(--accent);color:white;border:1px solid rgba(124,58,237,0.18);box-shadow:0 8px 30px rgba(124,58,237,0.12)}
 .muted{color:var(--muted)}
 .small{font-size:13px}
 .profile-pill{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);cursor:pointer}
@@ -167,6 +167,6 @@ body{margin:0;background:#ffffff;color:var(--text);min-height:100vh}
 
 /* category filter chips */
 .filter-bar{display:flex;gap:8px;flex-wrap:wrap}
-.filter-chip{background:transparent;border:1px solid rgba(118,78,71,0.12);color:var(--text);padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;transition:all .12s ease}
-.filter-chip:hover{background:var(--text);color:white;transform:translateY(-2px)}
-.filter-chip.active{background:var(--text);color:white;border:1px solid rgba(118,78,71,0.18)}
+.filter-chip{background:transparent;border:1px solid rgba(124,58,237,0.12);color:var(--text);padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;transition:all .12s ease}
+.filter-chip:hover{background:var(--accent);color:white;transform:translateY(-2px)}
+.filter-chip.active{background:var(--accent);color:white;border:1px solid rgba(124,58,237,0.18)}

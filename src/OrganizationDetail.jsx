@@ -948,7 +948,7 @@ export default function OrganizationDetail() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 13 }}>Text color</span>
-                    <input type="color" value={(org && org.homepage_text_color) ? org.homepage_text_color : '#764E47'} onChange={e => {
+                    <input type="color" value={(org && org.homepage_text_color) ? org.homepage_text_color : '#000000'} onChange={e => {
                       const newText = e.target.value;
                       setOrg(o => ({ ...(o || {}), homepage_text_color: newText }));
                     }} style={{ width: 44, height: 32, border: 'none', padding: 0, background: 'transparent' }} />
@@ -956,7 +956,7 @@ export default function OrganizationDetail() {
                   <button className="btn btn-primary" onClick={async () => {
                     if (!org) return;
                     const newColor = org.homepage_color || '#2563eb';
-                    const newText = org.homepage_text_color || '#764E47';
+                    const newText = org.homepage_text_color || '#000000';
                     try {
                       const { data, error } = await supabase.from('organizations').update({ homepage_color: newColor, homepage_text_color: newText }).eq('id', org.id).select().single();
                       if (error) return setMessage('Could not save colors: ' + error.message);
